@@ -4,6 +4,7 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
+import { Check, X } from "lucide-react";
 
 import DefaultLayout from "@/layouts/default";
 import axiosClient from "@/api/axiosClient";
@@ -358,13 +359,9 @@ export default function IndexPage() {
                                 {day.values?.map((val, i) => (
                                   <td key={i} className="p-2 text-center">
                                     {val === "1" || val === "P" ? (
-                                      <span className="text-success font-bold">
-                                        ✓
-                                      </span>
+                                      <Check className="inline-block text-success w-5 h-5" />
                                     ) : val === "0" || val === "A" ? (
-                                      <span className="text-danger font-bold">
-                                        ✗
-                                      </span>
+                                      <X className="inline-block text-danger w-5 h-5" />
                                     ) : val && val !== "-" ? (
                                       <span className="text-warning">
                                         {val}
