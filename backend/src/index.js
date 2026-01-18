@@ -32,6 +32,10 @@ const getHeaders = (referer) => ({
     ...(referer && { 'Referer': referer })
 });
 
+app.get('/', (req, res) => {
+    res.send('NSUT Attendance Backend is running.');
+});
+
 // --- ROUTE 1: INIT ---
 app.get('/api/init', async (req, res) => {
     try {
