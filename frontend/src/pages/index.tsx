@@ -32,6 +32,7 @@ export default function IndexPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [attendance, setAttendance] = useState<AttendanceData | null>(null);
   const [initLoading, setInitLoading] = useState(true);
+  const [hasStoredCredentials, setHasStoredCredentials] = useState(false);
 
   // Initialize session and get captcha
   const initSession = async () => {
@@ -51,6 +52,17 @@ export default function IndexPage() {
       setInitLoading(false);
     }
   };
+
+  // Load stored credentials from localStorage
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("nsut_rollno");
+    const storedPassword = localStorage.getItem("nsut_password");
+    if (storedUsername && storedPassword) {
+      setUsername(storedUsername);
+      setPassword(storedPassword);
+      setHasStoredCredentials(true);
+    }
+  }, []);
 
   useEffect(() => {
     initSession();
@@ -74,6 +86,11 @@ export default function IndexPage() {
       if (loginData.error) {
         throw new Error(loginData.error || "Login failed");
       }
+
+      // Store credentials in localStorage
+      localStorage.setItem("nsut_rollno", username);
+      localStorage.setItem("nsut_password", password);
+      setHasStoredCredentials(true);
 
       setLoggedIn(true);
 
@@ -134,26 +151,53 @@ export default function IndexPage() {
             <CardHeader className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">Student Login</h2>
               <p className="text-small text-default-500">
-                Enter your NSUT portal credentials
+                {hasStoredCredentials
+                  ? `Welcome back, ${username}`
+                  : "Enter your NSUT portal credentials"}
               </p>
             </CardHeader>
             <CardBody>
               <form className="flex flex-col gap-4" onSubmit={handleLogin}>
-                <Input
-                  isRequired
-                  label="Roll Number"
-                  placeholder="e.g., 2024UCS1695"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-                <Input
-                  isRequired
-                  label="Password"
-                  placeholder="Enter your password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                {!hasStoredCredentials ? (
+                  <>
+                    <Input
+                      isRequired
+                      label="Roll Number"
+                      placeholder="e.g., 2024UCS1695"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <Input
+                      isRequired
+                      label="Password"
+                      placeholder="Enter your password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center p-3 bg-default-100 rounded-lg">
+                    <div>
+                      <p className="text-sm text-default-500">Logged in as</p>
+                      <p className="font-semibold">{username}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="warning"
+                      onClick={() => {
+                        localStorage.removeItem("nsut_rollno");
+                        localStorage.removeItem("nsut_password");
+                        setUsername("");
+                        setPassword("");
+                        setHasStoredCredentials(false);
+                      }}
+                    >
+                      Change Account
+                    </Button>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2">
                   <p className="text-small text-default-500">Security Code</p>
