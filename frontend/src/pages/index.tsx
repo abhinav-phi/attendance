@@ -6,6 +6,7 @@ import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
 
 import DefaultLayout from "@/layouts/default";
+import axiosClient from "@/api/axiosClient";
 
 interface AttendanceData {
   studentInfo: {
@@ -19,8 +20,6 @@ interface AttendanceData {
   }>;
   summary: Record<string, string[]>;
 }
-
-const API_BASE = "http://localhost:5000/api";
 
 export default function IndexPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -39,14 +38,15 @@ export default function IndexPage() {
     setInitLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/init`);
-      const data = await res.json();
+      const { data } = await axiosClient.get("/init");
 
       if (data.error) throw new Error(data.error);
       setSessionId(data.sessionId);
       setCaptchaSrc(data.captchaSrc);
     } catch (e: any) {
-      setError("Failed to initialize: " + e.message);
+      setError(
+        "Failed to initialize: " + (e.response?.data?.error || e.message),
+      );
     } finally {
       setInitLoading(false);
     }
@@ -64,15 +64,14 @@ export default function IndexPage() {
     setError(null);
 
     try {
-      const loginRes = await fetch(`${API_BASE}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, username, password, captcha }),
+      const { data: loginData } = await axiosClient.post("/login", {
+        sessionId,
+        username,
+        password,
+        captcha,
       });
 
-      const loginData = await loginRes.json();
-
-      if (!loginRes.ok || loginData.error) {
+      if (loginData.error) {
         throw new Error(loginData.error || "Login failed");
       }
 
@@ -83,20 +82,16 @@ export default function IndexPage() {
         setAttendance(loginData.attendance);
       } else {
         // Fetch attendance separately
-        const attRes = await fetch(`${API_BASE}/attendance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
+        const { data: attData } = await axiosClient.post("/attendance", {
+          sessionId,
         });
-
-        const attData = await attRes.json();
 
         if (attData.success && attData.data) {
           setAttendance(attData.data);
         }
       }
     } catch (e: any) {
-      setError(e.message);
+      setError(e.response?.data?.error || e.message);
       // Refresh captcha on error
       initSession();
     } finally {

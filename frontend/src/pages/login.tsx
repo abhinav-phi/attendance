@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { Card, CardBody, CardHeader, Input, Button } from "@heroui/react";
 import { User, Lock, RefreshCw, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
@@ -11,8 +10,7 @@ import {
 } from "@/types/attendance";
 import { AppNavbar } from "@/components/app-navbar";
 import { Footer } from "@/components/footer";
-
-const API_BASE = "http://localhost:5000/api";
+import axiosClient from "@/api/axiosClient";
 
 interface LoginPageProps {
   onLogin: (data: AttendanceData, username: string) => void;
@@ -20,6 +18,7 @@ interface LoginPageProps {
 
 export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [loading, setLoading] = useState(false);
+
   const [initData, setInitData] = useState<InitResponse | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +29,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get<InitResponse>(`${API_BASE}/init`);
+      const res = await axiosClient.get<InitResponse>("/init");
 
       setInitData(res.data);
     } catch (err) {
@@ -51,7 +50,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     setError("");
 
     try {
-      const res = await axios.post<LoginResponse>(`${API_BASE}/login`, {
+      const res = await axiosClient.post<LoginResponse>("/login", {
         sessionId: initData.sessionId,
         username,
         password,
