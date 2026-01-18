@@ -13,7 +13,7 @@ export const Footer = () => {
             isExternal
             className="text-default-500 font-semibold hover:text-primary transition-colors underline-offset-4"
             color="foreground"
-            href="#"
+            href="https://github.com/swastikiscoding"
           >
             Swastik
           </Link>
