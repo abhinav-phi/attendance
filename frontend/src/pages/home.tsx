@@ -1,15 +1,18 @@
-import { Card, CardBody, Chip } from "@heroui/react";
+import { useState } from "react";
+import { Card, CardBody, Chip, Button } from "@heroui/react";
 import { motion } from "framer-motion";
-import { CalendarDays, BarChart3, Clock } from "lucide-react";
+import { CalendarDays, BarChart3, Clock, RefreshCw } from "lucide-react";
 
 import { useAppContext } from "@/context/app-context";
 import { AppNavbar } from "@/components/app-navbar";
 import { SubjectCard } from "@/components/subject-card";
 import { getPercentageColor } from "@/utils/attendance-utils";
 import { Footer } from "@/components/footer";
+import { RefreshModal } from "@/components/refresh-modal";
 
 export const HomePage = () => {
-  const { attendance, username } = useAppContext();
+  const { attendance, username, setAttendance } = useAppContext();
+  const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
 
   if (!attendance) return null;
 
@@ -54,6 +57,14 @@ export const HomePage = () => {
             </div>
 
             <div className="flex gap-4">
+              <Button
+                isIconOnly
+                className="bg-white/60 dark:bg-default-100/50 backdrop-blur-md shadow-sm"
+                variant="flat"
+                onPress={() => setIsRefreshModalOpen(true)}
+              >
+                <RefreshCw className="text-default-600" size={18} />
+              </Button>
               <Card className="border-none shadow-sm bg-white/60 dark:bg-default-100/50 backdrop-blur-md">
                 <CardBody className="py-2 px-4 flex-row items-center gap-3">
                   <div
@@ -176,6 +187,12 @@ export const HomePage = () => {
       <div className="relative z-10">
         <Footer />
       </div>
+
+      <RefreshModal
+        isOpen={isRefreshModalOpen}
+        onClose={() => setIsRefreshModalOpen(false)}
+        onRefresh={(data) => setAttendance(data)}
+      />
     </div>
   );
 };

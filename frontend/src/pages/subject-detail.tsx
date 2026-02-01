@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
@@ -13,6 +14,7 @@ import {
   XCircle,
   AlertCircle,
   HelpCircle,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -23,11 +25,13 @@ import {
   getPercentageColor,
   calculateClassesNeeded,
 } from "@/utils/attendance-utils";
+import { RefreshModal } from "@/components/refresh-modal";
 
 export const SubjectDetailPage = () => {
   const { subjectCode } = useParams<{ subjectCode: string }>();
   const navigate = useNavigate();
-  const { attendance } = useAppContext();
+  const { attendance, setAttendance } = useAppContext();
+  const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
 
   if (!attendance || !subjectCode) {
     return (
@@ -211,22 +215,32 @@ export const SubjectDetailPage = () => {
         {/* Header Navigation */}
         <motion.div
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-2"
+          className="flex items-center justify-between"
           initial={{ opacity: 0, x: -10 }}
         >
+          <div className="flex items-center gap-2">
+            <Button
+              isIconOnly
+              className="bg-white/50 dark:bg-default-100 hover:bg-white dark:hover:bg-default-200"
+              variant="light"
+              onPress={() => navigate("/")}
+            >
+              <ArrowLeft className="text-default-600" size={20} />
+            </Button>
+            <div>
+              <p className="text-sm font-medium text-default-500">
+                Back to Dashboard
+              </p>
+            </div>
+          </div>
           <Button
             isIconOnly
             className="bg-white/50 dark:bg-default-100 hover:bg-white dark:hover:bg-default-200"
             variant="light"
-            onPress={() => navigate("/")}
+            onPress={() => setIsRefreshModalOpen(true)}
           >
-            <ArrowLeft className="text-default-600" size={20} />
+            <RefreshCw className="text-default-600" size={18} />
           </Button>
-          <div>
-            <p className="text-sm font-medium text-default-500">
-              Back to Dashboard
-            </p>
-          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -402,6 +416,12 @@ export const SubjectDetailPage = () => {
         </div>
       </div>
       <Footer />
+
+      <RefreshModal
+        isOpen={isRefreshModalOpen}
+        onClose={() => setIsRefreshModalOpen(false)}
+        onRefresh={(data) => setAttendance(data)}
+      />
     </div>
   );
 };
