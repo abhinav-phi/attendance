@@ -329,7 +329,7 @@ export const SubjectDetailPage = () => {
                     }`}
                   >
                     <div
-                      className={`mt-0.5 p-1 rounded-full ${calc.type === "skip" ? "bg-success-200 text-success-700 dark:bg-success-900/50 dark:text-success-300" : "bg-danger-200 text-danger-700 dark:bg-danger-900/50 dark:text-danger-300"}`}
+                      className={`mt-0.5 p-1 rounded-full ${calc.type === "skip" ? " text-success-700 dark:text-success-300" : " text-danger-700 dark:text-danger-600"}`}
                     >
                       {calc.type === "skip" ? (
                         <CheckCircle2 size={16} />
