@@ -1,6 +1,7 @@
 import { Card, CardBody, Progress } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { Subject, AttendanceData } from "@/types/attendance";
 import {
@@ -94,7 +95,11 @@ export const SubjectCard = ({
               }`}
             >
               <span className="text-lg">
-                {calc.type === "skip" ? "🎉" : "⚠️"}
+                {calc.type === "skip" ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
               </span>
               {calc.type === "skip"
                 ? calc.count > 0

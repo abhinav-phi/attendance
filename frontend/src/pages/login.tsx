@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Input, Button, Checkbox } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Input,
+  Button,
+  Checkbox,
+} from "@heroui/react";
 import { User, Lock, RefreshCw, LogIn, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -55,6 +62,7 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   useEffect(() => {
     const savedUsername = localStorage.getItem("nsut_username");
     const savedPassword = localStorage.getItem("nsut_password");
+
     if (savedUsername && savedPassword) {
       setUsername(savedUsername);
       setPassword(savedPassword);
@@ -139,7 +147,9 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                 {hasSavedCredentials ? `Welcome, ${username}` : "Welcome Back"}
               </h1>
               <p className="text-default-500 text-sm">
-                {hasSavedCredentials ? "Enter the captcha to continue" : "Enter your IMS credentials to continue"}
+                {hasSavedCredentials
+                  ? "Enter the captcha to continue"
+                  : "Enter your IMS credentials to continue"}
               </p>
             </CardHeader>
 
@@ -204,20 +214,21 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                   <div className="flex items-center justify-between p-3 bg-default-100/50 rounded-lg border border-default-200">
                     <div className="flex items-center gap-2">
                       <User className="text-default-500" size={18} />
-                      <span className="text-sm font-medium text-default-700">{username}</span>
+                      <span className="text-sm font-medium text-default-700">
+                        {username}
+                      </span>
                     </div>
                     <Button
-                      size="sm"
-                      variant="flat"
                       color="danger"
+                      size="sm"
                       startContent={<Trash2 size={14} />}
+                      variant="flat"
                       onPress={clearCredentials}
                     >
                       Clear
                     </Button>
                   </div>
                 )}
-
 
                 {initData?.captchaSrc && (
                   <div className="space-y-2">
@@ -263,12 +274,12 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
 
               {!hasSavedCredentials && (
                 <Checkbox
-                  isSelected={rememberMe}
-                  onValueChange={setRememberMe}
-                  size="sm"
                   classNames={{
                     label: "text-sm text-default-500",
                   }}
+                  isSelected={rememberMe}
+                  size="sm"
+                  onValueChange={setRememberMe}
                 >
                   Remember my credentials
                 </Checkbox>
