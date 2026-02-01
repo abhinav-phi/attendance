@@ -33,14 +33,17 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
+  const [savedStudentName, setSavedStudentName] = useState("");
 
   const clearCredentials = () => {
     localStorage.removeItem("nsut_username");
     localStorage.removeItem("nsut_password");
+    localStorage.removeItem("nsut_student_name");
     setUsername("");
     setPassword("");
     setRememberMe(false);
     setHasSavedCredentials(false);
+    setSavedStudentName("");
   };
 
   const initSession = async () => {
@@ -62,12 +65,16 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   useEffect(() => {
     const savedUsername = localStorage.getItem("nsut_username");
     const savedPassword = localStorage.getItem("nsut_password");
+    const storedStudentName = localStorage.getItem("nsut_student_name");
 
     if (savedUsername && savedPassword) {
       setUsername(savedUsername);
       setPassword(savedPassword);
       setRememberMe(true);
       setHasSavedCredentials(true);
+      if (storedStudentName) {
+        setSavedStudentName(storedStudentName);
+      }
     }
     initSession();
   }, []);
@@ -95,6 +102,13 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
       });
 
       if (res.data.success && res.data.attendance) {
+        // Save student name to localStorage if remember me is enabled
+        if (rememberMe && res.data.attendance.studentInfo?.name) {
+          localStorage.setItem(
+            "nsut_student_name",
+            res.data.attendance.studentInfo.name,
+          );
+        }
         onLogin(res.data.attendance, username);
       } else if (res.data.error) {
         setError(res.data.error);
@@ -144,7 +158,9 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                 <span className="text-white font-bold text-3xl">N</span>
               </div>
               <h1 className="text-2xl font-bold text-foreground">
-                {hasSavedCredentials ? `Welcome, ${username}` : "Welcome Back"}
+                {hasSavedCredentials
+                  ? `Welcome, ${savedStudentName ? savedStudentName.split(" ")[0] : username}`
+                  : "Welcome Back"}
               </h1>
               <p className="text-default-500 text-sm">
                 {hasSavedCredentials
