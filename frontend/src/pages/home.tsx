@@ -151,7 +151,7 @@ export const HomePage = () => {
           {/* Subjects Grid */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-default-700 dark:text-default-300 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-default-700 dark:text-primary-800 flex items-center gap-2">
                 <span className="w-1 h-6 bg-primary rounded-full" />
                 My Subjects
               </h2>

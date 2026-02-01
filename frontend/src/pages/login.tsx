@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Input, Button } from "@heroui/react";
-import { User, Lock, RefreshCw, LogIn } from "lucide-react";
+import { Card, CardBody, CardHeader, Input, Button, Checkbox } from "@heroui/react";
+import { User, Lock, RefreshCw, LogIn, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import {
@@ -24,6 +24,17 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
+
+  const clearCredentials = () => {
+    localStorage.removeItem("nsut_username");
+    localStorage.removeItem("nsut_password");
+    setUsername("");
+    setPassword("");
+    setRememberMe(false);
+    setHasSavedCredentials(false);
+  };
 
   const initSession = async () => {
     setLoading(true);
@@ -40,7 +51,16 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     }
   };
 
+  // Load saved credentials from localStorage on mount
   useEffect(() => {
+    const savedUsername = localStorage.getItem("nsut_username");
+    const savedPassword = localStorage.getItem("nsut_password");
+    if (savedUsername && savedPassword) {
+      setUsername(savedUsername);
+      setPassword(savedPassword);
+      setRememberMe(true);
+      setHasSavedCredentials(true);
+    }
     initSession();
   }, []);
 
@@ -48,6 +68,15 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     if (!initData) return;
     setLoading(true);
     setError("");
+
+    // Save or clear credentials based on rememberMe
+    if (rememberMe) {
+      localStorage.setItem("nsut_username", username);
+      localStorage.setItem("nsut_password", password);
+    } else {
+      localStorage.removeItem("nsut_username");
+      localStorage.removeItem("nsut_password");
+    }
 
     try {
       const res = await axiosClient.post<LoginResponse>("/login", {
@@ -107,10 +136,10 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                 <span className="text-white font-bold text-3xl">N</span>
               </div>
               <h1 className="text-2xl font-bold text-foreground">
-                Welcome Back
+                {hasSavedCredentials ? `Welcome, ${username}` : "Welcome Back"}
               </h1>
               <p className="text-default-500 text-sm">
-                Enter your IMS credentials to continue
+                {hasSavedCredentials ? "Enter the captcha to continue" : "Enter your IMS credentials to continue"}
               </p>
             </CardHeader>
 
@@ -126,46 +155,69 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
               )}
 
               <div className="space-y-4">
-                <Input
-                  classNames={{
-                    inputWrapper:
-                      "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                  }}
-                  isDisabled={loading}
-                  label="Roll Number"
-                  labelPlacement="outside"
-                  placeholder="202XUCSXXXX"
-                  startContent={
-                    <User
-                      className="text-default-400 pointer-events-none"
-                      size={18}
+                {!hasSavedCredentials && (
+                  <>
+                    <Input
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
+                      }}
+                      isDisabled={loading}
+                      label="Roll Number"
+                      labelPlacement="outside"
+                      placeholder="202XUCSXXXX"
+                      startContent={
+                        <User
+                          className="text-default-400 pointer-events-none"
+                          size={18}
+                        />
+                      }
+                      value={username}
+                      variant="bordered"
+                      onChange={(e) => setUsername(e.target.value)}
                     />
-                  }
-                  value={username}
-                  variant="bordered"
-                  onChange={(e) => setUsername(e.target.value)}
-                />
 
-                <Input
-                  classNames={{
-                    inputWrapper:
-                      "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                  }}
-                  isDisabled={loading}
-                  label="Password"
-                  labelPlacement="outside"
-                  placeholder="••••••••"
-                  startContent={
-                    <Lock
-                      className="text-default-400 pointer-events-none"
-                      size={18}
+                    <Input
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
+                      }}
+                      isDisabled={loading}
+                      label="Password"
+                      labelPlacement="outside"
+                      placeholder="••••••••"
+                      startContent={
+                        <Lock
+                          className="text-default-400 pointer-events-none"
+                          size={18}
+                        />
+                      }
+                      type="password"
+                      value={password}
+                      variant="bordered"
+                      onChange={(e) => setPassword(e.target.value)}
                     />
-                  }
-                  type="password"
-                  value={password}
-                  variant="bordered"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                  </>
+                )}
+
+                {hasSavedCredentials && (
+                  <div className="flex items-center justify-between p-3 bg-default-100/50 rounded-lg border border-default-200">
+                    <div className="flex items-center gap-2">
+                      <User className="text-default-500" size={18} />
+                      <span className="text-sm font-medium text-default-700">{username}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      startContent={<Trash2 size={14} />}
+                      onPress={clearCredentials}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
+
 
                 {initData?.captchaSrc && (
                   <div className="space-y-2">
@@ -208,6 +260,19 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                   </div>
                 )}
               </div>
+
+              {!hasSavedCredentials && (
+                <Checkbox
+                  isSelected={rememberMe}
+                  onValueChange={setRememberMe}
+                  size="sm"
+                  classNames={{
+                    label: "text-sm text-default-500",
+                  }}
+                >
+                  Remember my credentials
+                </Checkbox>
+              )}
 
               <Button
                 className="mt-2 w-full font-semibold shadow-lg shadow-indigo-500/20"
