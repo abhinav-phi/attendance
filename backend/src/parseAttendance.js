@@ -15,6 +15,49 @@ function decodeHtmlEntities(text) {
 }
 
 /**
+ * Convert date string like "Jan-02" to a sortable Date object
+ * @param {string} dateStr - Date string in format "Mon-DD"
+ * @param {string} year - Academic year like "2025-26"
+ * @returns {Date} Date object for sorting
+ */
+function parseDateString(dateStr, year) {
+    const months = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+    };
+    
+    const match = dateStr.match(/^([A-Za-z]{3})-?(\d{1,2})$/);
+    if (!match) return new Date(0);
+    
+    const monthName = match[1];
+    const day = parseInt(match[2]);
+    const monthIndex = months[monthName];
+    
+    if (monthIndex === undefined) return new Date(0);
+    
+    // Determine the year based on month and academic year
+    // Academic year 2025-26 means Jul 2025 - Jun 2026
+    // Jan-Jun belong to the second year (2026), Jul-Dec to the first year (2025)
+    let actualYear;
+    if (year) {
+        const yearParts = year.split('-');
+        const firstYear = parseInt('20' + yearParts[0].slice(-2));
+        const secondYear = firstYear + 1;
+        
+        // Jan-Jun belong to the second year, Jul-Dec to the first year
+        if (monthIndex >= 0 && monthIndex <= 5) {
+            actualYear = secondYear;
+        } else {
+            actualYear = firstYear;
+        }
+    } else {
+        actualYear = new Date().getFullYear();
+    }
+    
+    return new Date(actualYear, monthIndex, day);
+}
+
+/**
  * Parse attendance HTML from NSUT/IMS portal
  * @param {string} html - Raw HTML response from attendance page
  * @returns {object} Parsed attendance data
@@ -30,7 +73,7 @@ export function parseAttendance(html) {
             year: ''
         },
         subjects: [], // Array of { code, name }
-        dailyAttendance: [], // Array of { date, records: { subjectCode: value } }
+        dailyAttendance: [], // Array of { date, month, records: { subjectCode: value } }
         summary: {
             totalClasses: {},
             totalAbsent: {},
@@ -43,34 +86,37 @@ export function parseAttendance(html) {
         legend: {}
     };
     
-    // Find the main attendance table (has subject codes in header)
+    // Find all attendance tables (there can be multiple - one per month)
     const tables = $('table');
-    let mainTable = null;
+    let attendanceTables = [];
     let subjectCodes = [];
     
+    // Find all tables that contain attendance data (they have 'Days' header and subject codes)
     tables.each((i, table) => {
-        const headerRow = $(table).find('tr.plum_head').eq(1); // Second plum_head row has subject codes
-        if (headerRow.length) {
-            const cells = headerRow.find('td');
+        const headerRows = $(table).find('tr.plum_head');
+        headerRows.each((j, row) => {
+            const cells = $(row).find('td');
             if (cells.length > 2) {
                 const firstCellText = $(cells[0]).text().trim();
                 if (firstCellText === 'Days') {
-                    mainTable = $(table);
-                    // Extract subject codes (skip first 'Days' column)
-                    cells.each((j, cell) => {
-                        if (j > 0) {
-                            const code = $(cell).text().trim();
-                            if (code && code.match(/^[A-Z]{2,}/)) {
-                                subjectCodes.push(code);
+                    attendanceTables.push($(table));
+                    // Extract subject codes (skip first 'Days' column) - only once
+                    if (subjectCodes.length === 0) {
+                        cells.each((k, cell) => {
+                            if (k > 0) {
+                                const code = $(cell).text().trim();
+                                if (code && code.match(/^[A-Z]{2,}/)) {
+                                    subjectCodes.push(code);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
-        }
+        });
     });
     
-    if (!mainTable || subjectCodes.length === 0) {
+    if (attendanceTables.length === 0 || subjectCodes.length === 0) {
         // Fallback: find table with subject code pattern in header
         tables.each((i, table) => {
             const rows = $(table).find('tr');
@@ -82,17 +128,17 @@ export function parseAttendance(html) {
                 // Check if this row has subject codes (pattern: letters + numbers)
                 const hasSubjectCodes = texts.some(t => t.match(/^[A-Z]{2,}\d{3,}/));
                 if (hasSubjectCodes && texts.includes('Days')) {
-                    mainTable = $(table);
-                    subjectCodes = texts.filter(t => t.match(/^[A-Z]{2,}\d{3,}/));
+                    attendanceTables.push($(table));
+                    if (subjectCodes.length === 0) {
+                        subjectCodes = texts.filter(t => t.match(/^[A-Z]{2,}\d{3,}/));
+                    }
                 }
             });
         });
     }
-    
-    console.log('Found subject codes:', subjectCodes);
-    
-    // Extract student info from header
-    const infoRow = mainTable ? mainTable.find('tr.plum_head').first() : $('tr.plum_head').first();
+        
+    // Extract student info from header (use first attendance table or fall back to first plum_head)
+    const infoRow = attendanceTables.length > 0 ? attendanceTables[0].find('tr.plum_head').first() : $('tr.plum_head').first();
     const infoText = infoRow.text();
     
     // Parse: "Name: SWASTIK (2024UCS1695), Semester : 4"
@@ -137,7 +183,7 @@ export function parseAttendance(html) {
         }
     });
     
-    console.log('Subject name map:', subjectNameMap);
+    // console.log('Subject name map:', subjectNameMap);
     
     // Build subjects array with codes and names
     result.subjects = subjectCodes.map(code => ({
@@ -156,9 +202,9 @@ export function parseAttendance(html) {
         }
     });
     
-    // Parse daily attendance and summary rows
-    if (mainTable) {
-        const rows = mainTable.find('tr');
+    // Parse daily attendance and summary rows from ALL attendance tables
+    attendanceTables.forEach((table) => {
+        const rows = table.find('tr');
         
         rows.each((i, row) => {
             const cells = $(row).find('td, th');
@@ -181,18 +227,25 @@ export function parseAttendance(html) {
             
             // Check what type of row this is
             if (firstCell.match(/^[A-Z][a-z]{2}-\d{1,2}$/)) {
-                // Date row (e.g., "Jan-02")
+                // Date row (e.g., "Jan-02", "Feb-01")
+                // Extract month from the date
+                const monthMatch = firstCell.match(/^([A-Za-z]{3})/);
+                const month = monthMatch ? monthMatch[1] : '';
+                
                 result.dailyAttendance.push({
                     date: firstCell,
+                    month: month,
                     records: values
                 });
             } else if (firstCellLower.includes('total classes')) {
-                result.summary.totalClasses = values;
+                // Merge with existing (in case of multiple tables)
+                Object.assign(result.summary.totalClasses, values);
             } else if (firstCellLower.includes('total') && firstCellLower.includes('absent') && !firstCellLower.includes('overall')) {
-                result.summary.totalAbsent = values;
+                Object.assign(result.summary.totalAbsent, values);
             } else if (firstCellLower.includes('total') && firstCellLower.includes('present') && !firstCellLower.includes('overall')) {
-                result.summary.totalPresent = values;
+                Object.assign(result.summary.totalPresent, values);
             } else if (firstCellLower.includes('overall class')) {
+                // Overall values from the last table are the final ones
                 result.summary.overallClasses = values;
             } else if (firstCellLower.includes('overall') && firstCellLower.includes('absent')) {
                 result.summary.overallAbsent = values;
@@ -209,7 +262,14 @@ export function parseAttendance(html) {
                 result.summary.overallPercentage = values;
             }
         });
-    }
+    });
+    
+    // Sort daily attendance by date (latest first)
+    result.dailyAttendance.sort((a, b) => {
+        const dateA = parseDateString(a.date, result.studentInfo.year);
+        const dateB = parseDateString(b.date, result.studentInfo.year);
+        return dateB.getTime() - dateA.getTime(); // Latest first
+    });
     
     // Calculate overall attendance percentage
     let totalClasses = 0;
@@ -232,7 +292,6 @@ export function parseAttendance(html) {
         percentage: totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(2) + '%' : 'N/A'
     };
     
-    console.log('Parsed result:', JSON.stringify(result, null, 2));
     
     return result;
 }

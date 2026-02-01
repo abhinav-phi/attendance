@@ -89,8 +89,8 @@ export const SubjectCard = ({
             <div
               className={`text-xs font-semibold px-3 py-2 rounded-lg border flex items-center gap-2 ${
                 calc.type === "skip"
-                  ? "bg-success-50/50 border-success-200 text-success-700 dark:text-success-300 dark:bg-success-900/20 dark:border-success-900/30"
-                  : "bg-danger-50/50 border-danger-200 text-danger-700 dark:text-danger-300 dark:bg-danger-900/20 dark:border-danger-900/30"
+                  ? "bg-success-50/50 border-success-200 text-success-700 dark:text-success-400 dark:bg-success-900/20 dark:border-success-900/30"
+                  : "bg-danger-50/50 border-danger-200 text-danger-700 dark:text-danger-600 dark:bg-danger-900/20 dark:border-danger-900/30"
               }`}
             >
               <span className="text-lg">

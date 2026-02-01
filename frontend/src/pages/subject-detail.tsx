@@ -72,7 +72,7 @@ export const SubjectDetailPage = () => {
 
   const calc = calculateClassesNeeded(present, total);
 
-  // Filter daily attendance
+  // Filter daily attendance - already sorted by latest first from backend
   const dailyRecords = attendance.dailyAttendance
     .filter((day) => {
       const val = day.records[subjectCode];
@@ -81,8 +81,56 @@ export const SubjectDetailPage = () => {
     })
     .map((day) => ({
       date: day.date,
+      month: day.month || day.date.split("-")[0],
       value: day.records[subjectCode],
     }));
+
+  // Group records by month for display with headings
+  const groupedByMonth = dailyRecords.reduce(
+    (acc, record) => {
+      const month = record.month;
+
+      if (!acc[month]) {
+        acc[month] = [];
+      }
+      acc[month].push(record);
+
+      return acc;
+    },
+    {} as Record<string, typeof dailyRecords>,
+  );
+
+  // Get months in order (latest first - from the already sorted records)
+  const monthOrder = Object.keys(groupedByMonth);
+
+  // Helper to get the year for a month based on academic year
+  // Academic year 2025-26 means Jul-Dec 2025 and Jan-Jun 2026
+  const getYearForMonth = (monthAbbr: string): number => {
+    const academicYear = attendance.studentInfo?.year || "2025-26";
+    const yearParts = academicYear.split("-");
+    const firstYear = parseInt("20" + yearParts[0].slice(-2));
+    const secondYear = firstYear + 1;
+
+    const monthsInSecondYear = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+
+    return monthsInSecondYear.includes(monthAbbr) ? secondYear : firstYear;
+  };
+
+  // Month full names mapping
+  const monthFullNames: Record<string, string> = {
+    Jan: "January",
+    Feb: "February",
+    Mar: "March",
+    Apr: "April",
+    May: "May",
+    Jun: "June",
+    Jul: "July",
+    Aug: "August",
+    Sep: "September",
+    Oct: "October",
+    Nov: "November",
+    Dec: "December",
+  };
 
   const renderAttendanceValue = (val: string) => {
     if (val === "1")
@@ -109,7 +157,33 @@ export const SubjectDetailPage = () => {
           Absent
         </Chip>
       );
-    if (val.includes("+"))
+    if (val.includes("+")) {
+      if (val == "1+1") {
+        return (
+          <Chip
+            classNames={{ base: "bg-success-50 border-success-200" }}
+            color="success"
+            size="sm"
+            startContent={<CheckCircle2 size={14} />}
+            variant="faded"
+          >
+            Present {val}
+          </Chip>
+        );
+      } else if (val == "0+0") {
+        return (
+          <Chip
+            classNames={{ base: "bg-danger-50 border-danger-200" }}
+            color="danger"
+            size="sm"
+            startContent={<XCircle size={14} />}
+            variant="faded"
+          >
+            Absent {val}
+          </Chip>
+        );
+      }
+
       return (
         <Chip
           color="warning"
@@ -120,6 +194,7 @@ export const SubjectDetailPage = () => {
           Extra {val}
         </Chip>
       );
+    }
 
     return (
       <Chip size="sm" variant="flat">
@@ -168,7 +243,7 @@ export const SubjectDetailPage = () => {
                     <h1 className="text-2xl font-bold leading-tight w-full max-w-xl">
                       {subject.name}
                     </h1>
-                    <p className="font-mono text-sm text-primary font-medium mt-1 bg-primary-50 dark:bg-primary-900/30 w-fit px-2 py-0.5 rounded">
+                    <p className="font-mono text-sm text-primary-800 font-medium mt-1 bg-primary-50 dark:bg-primary-300/30 w-fit px-2 py-0.5 rounded">
                       {subject.code}
                     </p>
                   </div>
@@ -235,8 +310,8 @@ export const SubjectDetailPage = () => {
                   <div
                     className={`p-4 rounded-xl border flex items-start gap-3 ${
                       calc.type === "skip"
-                        ? "bg-success-50 border-success-200 dark:bg-success-900/20 dark:border-success-800"
-                        : "bg-danger-50 border-danger-200 dark:bg-danger-900/20 dark:border-danger-800"
+                        ? "bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800"
+                        : "bg-danger-50 border-danger-200 dark:bg-danger/5 dark:border-danger-800"
                     }`}
                   >
                     <div
@@ -250,14 +325,14 @@ export const SubjectDetailPage = () => {
                     </div>
                     <div>
                       <h4
-                        className={`font-bold text-sm ${calc.type === "skip" ? "text-success-800 dark:text-success-300" : "text-danger-800 dark:text-danger-300"}`}
+                        className={`font-bold text-sm ${calc.type === "skip" ? "text-success-800 dark:text-success-300" : "text-danger-800 dark:text-danger-500"}`}
                       >
                         {calc.type === "skip"
                           ? "Safe Zone"
                           : "Improvement Needed"}
                       </h4>
                       <p
-                        className={`text-sm mt-0.5 ${calc.type === "skip" ? "text-success-700 dark:text-success-400" : "text-danger-700 dark:text-danger-400"}`}
+                        className={`text-sm mt-0.5 ${calc.type === "skip" ? "text-success-700 dark:text-success-400" : "text-danger-700 dark:text-danger-800"}`}
                       >
                         {calc.type === "skip"
                           ? calc.count > 0
@@ -289,20 +364,29 @@ export const SubjectDetailPage = () => {
               <CardBody className="p-0 overflow-y-auto custom-scrollbar">
                 {dailyRecords.length > 0 ? (
                   <div className="divide-y divide-default-100">
-                    {dailyRecords.map((record, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-4 hover:bg-default-50 transition-colors"
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold">
-                            {record.date}
-                          </span>
-                          <span className="text-xs text-default-400">
-                            Class {dailyRecords.length - idx}
+                    {monthOrder.map((month) => (
+                      <div key={month}>
+                        {/* Month Header */}
+                        <div className="sticky z-30 top-0 bg-default-50 dark:bg-default-50 px-4 py-2 border-b border-default-100">
+                          <span className="text-sm font-bold text-primary dark:text-primary-500">
+                            {monthFullNames[month] || month}{" "}
+                            {getYearForMonth(month)}
                           </span>
                         </div>
-                        {renderAttendanceValue(record.value)}
+                        {/* Records for this month */}
+                        {groupedByMonth[month].map((record, idx) => (
+                          <div
+                            key={`${month}-${idx}`}
+                            className="flex items-center justify-between p-4 hover:bg-default-50 transition-colors"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold">
+                                {record.date}
+                              </span>
+                            </div>
+                            {renderAttendanceValue(record.value)}
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>

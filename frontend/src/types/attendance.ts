@@ -10,6 +10,7 @@ export interface Subject {
 
 export interface DailyRecord {
   date: string;
+  month?: string;
   records: Record<string, string>;
 }
 

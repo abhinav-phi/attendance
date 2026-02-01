@@ -58,6 +58,7 @@ export default function IndexPage() {
   useEffect(() => {
     const storedUsername = localStorage.getItem("nsut_rollno");
     const storedPassword = localStorage.getItem("nsut_password");
+
     if (storedUsername && storedPassword) {
       setUsername(storedUsername);
       setPassword(storedPassword);
@@ -184,9 +185,9 @@ export default function IndexPage() {
                       <p className="font-semibold">{username}</p>
                     </div>
                     <Button
+                      color="warning"
                       size="sm"
                       variant="flat"
-                      color="warning"
                       onClick={() => {
                         localStorage.removeItem("nsut_rollno");
                         localStorage.removeItem("nsut_password");
