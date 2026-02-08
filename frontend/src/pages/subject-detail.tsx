@@ -136,6 +136,43 @@ export const SubjectDetailPage = () => {
     Dec: "December",
   };
 
+  // Month abbreviation to number mapping
+  const monthToNumber: Record<string, number> = {
+    Jan: 0,
+    Feb: 1,
+    Mar: 2,
+    Apr: 3,
+    May: 4,
+    Jun: 5,
+    Jul: 6,
+    Aug: 7,
+    Sep: 8,
+    Oct: 9,
+    Nov: 10,
+    Dec: 11,
+  };
+
+  // Helper to get day of week from date and month
+  const getDayOfWeek = (dateStr: string, month: string): string => {
+    // Date format is "Month-Day" (e.g., "Feb-05")
+    const parts = dateStr.split("-");
+    const dayNum = parseInt(parts[1] || parts[0]);
+    const year = getYearForMonth(month);
+    const monthNum = monthToNumber[month];
+    const date = new Date(year, monthNum, dayNum);
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+
+    return days[date.getDay()];
+  };
+
   const renderAttendanceValue = (val: string) => {
     if (val === "1")
       return (
@@ -396,6 +433,9 @@ export const SubjectDetailPage = () => {
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold">
                                 {record.date}
+                              </span>
+                              <span className="text-xs text-default-400">
+                                {getDayOfWeek(record.date, record.month)}
                               </span>
                             </div>
                             {renderAttendanceValue(record.value)}
