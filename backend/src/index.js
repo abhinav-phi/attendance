@@ -201,7 +201,7 @@ app.post("/api/login", async (req, res) => {
       uid: username,
       pwd: password,
       HRAND_NUM: hrandNum,
-      fy: "2025-26",
+      fy: "2026-27",
       comp: "NETAJI SUBHAS UNIVERSITY OF TECHNOLOGY",
       cap: captcha,
       logintype: "student",
@@ -440,8 +440,8 @@ async function fetchAttendance(client, username, loginResponseHtml) {
   });
 
   // HARDCODED values for year and semester - these MUST override form defaults
-  formData.year = "2025-26";
-  formData.sem = "4";
+  formData.year = "2026-27";
+  formData.sem = "5";
   formData.submit = "Submit";
   // Keep recentitycode from form if present, otherwise use username
   formData.recentitycode = formData.recentitycode || username.toUpperCase();

@@ -17,7 +17,7 @@ function decodeHtmlEntities(text) {
 /**
  * Convert date string like "Jan-02" to a sortable Date object
  * @param {string} dateStr - Date string in format "Mon-DD"
- * @param {string} year - Academic year like "2025-26"
+ * @param {string} year - Academic year like "2026-27"
  * @returns {Date} Date object for sorting
  */
 function parseDateString(dateStr, year) {
@@ -36,8 +36,8 @@ function parseDateString(dateStr, year) {
     if (monthIndex === undefined) return new Date(0);
     
     // Determine the year based on month and academic year
-    // Academic year 2025-26 means Jul 2025 - Jun 2026
-    // Jan-Jun belong to the second year (2026), Jul-Dec to the first year (2025)
+    // Academic year 2026-27 means Jul 2026 - Jun 2027
+    // Jan-Jun belong to the second year (2027), Jul-Dec to the first year (2026)
     let actualYear;
     if (year) {
         const yearParts = year.split('-');
@@ -156,7 +156,7 @@ export function parseAttendance(html) {
     // Get year from select
     const yearSelect = $('select[name="year"]');
     const selectedYear = yearSelect.find('option[selected]').val() || yearSelect.find('option').eq(1).val();
-    result.studentInfo.year = selectedYear || '2025-26';
+    result.studentInfo.year = selectedYear || '2026-27';
     
     // Extract subject full names from the legend table at the bottom
     const subjectNameMap = {};
