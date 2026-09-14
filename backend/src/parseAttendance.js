@@ -141,7 +141,7 @@ export function parseAttendance(html) {
     const infoRow = attendanceTables.length > 0 ? attendanceTables[0].find('tr.plum_head').first() : $('tr.plum_head').first();
     const infoText = infoRow.text();
     
-    // Parse: "Name: SWASTIK (2024UCS1695), Semester : 4"
+    // Parse: "Name: STUDENT NAME (2024UCSXXXX), Semester : 5"
     const nameMatch = infoText.match(/Name:\s*([^(]+)\s*\(([^)]+)\)/i);
     if (nameMatch) {
         result.studentInfo.name = nameMatch[1].trim();

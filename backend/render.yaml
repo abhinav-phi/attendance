@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: present-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node api/index.js
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: IMS_UID
+        sync: false
+      - key: IMS_PWD
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

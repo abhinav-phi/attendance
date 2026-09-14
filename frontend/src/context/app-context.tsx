@@ -6,6 +6,7 @@ interface AppContextType {
   attendance: AttendanceData | null;
   setAttendance: (data: AttendanceData | null) => void;
   username: string;
+  lastUpdated: number | null;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

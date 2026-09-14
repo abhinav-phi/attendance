@@ -7,11 +7,12 @@ import { useAppContext } from "@/context/app-context";
 import { AppNavbar } from "@/components/app-navbar";
 import { SubjectCard } from "@/components/subject-card";
 import { getPercentageColor } from "@/utils/attendance-utils";
+import { timeAgo } from "@/utils/cache";
 import { Footer } from "@/components/footer";
 import { RefreshModal } from "@/components/refresh-modal";
 
 export const HomePage = () => {
-  const { attendance, username, setAttendance } = useAppContext();
+  const { attendance, username, setAttendance, lastUpdated } = useAppContext();
   const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
 
   if (!attendance) return null;
@@ -27,10 +28,7 @@ export const HomePage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-black">
-      <AppNavbar
-        showLogout
-        username={attendance.studentInfo?.name.split(" ")[0]}
-      />
+      <AppNavbar username={attendance.studentInfo?.name.split(" ")[0]} />
 
       {/* Decorative background */}
       <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-indigo-50/50 to-transparent dark:from-indigo-950/10 pointer-events-none" />
@@ -56,15 +54,22 @@ export const HomePage = () => {
               </p>
             </div>
 
-            <div className="flex gap-4">
-              <Button
-                isIconOnly
-                className="bg-white/60 dark:bg-default-100/50 backdrop-blur-md shadow-sm"
-                variant="flat"
-                onPress={() => setIsRefreshModalOpen(true)}
-              >
-                <RefreshCw className="text-default-600" size={18} />
-              </Button>
+            <div className="flex gap-4 items-center">
+              <div className="flex flex-col items-end gap-1">
+                {lastUpdated && (
+                  <p className="text-xs text-default-400 font-medium">
+                    Updated {timeAgo(lastUpdated)}
+                  </p>
+                )}
+                <Button
+                  className="bg-white/60 dark:bg-default-100/50 backdrop-blur-md shadow-sm font-medium"
+                  variant="flat"
+                  startContent={<RefreshCw className="text-default-600" size={18} />}
+                  onPress={() => setIsRefreshModalOpen(true)}
+                >
+                  Refresh
+                </Button>
+              </div>
               <Card className="border-none shadow-sm bg-white/60 dark:bg-default-100/50 backdrop-blur-md">
                 <CardBody className="py-2 px-4 flex-row items-center gap-3">
                   <div

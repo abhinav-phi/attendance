@@ -55,25 +55,15 @@ export const RefreshModal = ({
   }, [isOpen]);
 
   const handleRefresh = async () => {
-    if (!initData) return;
-
-    const savedUsername = localStorage.getItem("nsut_username");
-    const savedPassword = localStorage.getItem("nsut_password");
-
-    if (!savedUsername || !savedPassword) {
-      setError("No saved credentials. Please logout and login again.");
-
-      return;
-    }
+    if (!initData || !captcha) return;
 
     setLoading(true);
     setError("");
 
     try {
-      const res = await axiosClient.post<LoginResponse>("/login", {
+      // Single-user: credentials live on the server, only captcha is needed
+      const res = await axiosClient.post<LoginResponse>("/refresh", {
         sessionId: initData.sessionId,
-        username: savedUsername,
-        password: savedPassword,
         captcha,
       });
 

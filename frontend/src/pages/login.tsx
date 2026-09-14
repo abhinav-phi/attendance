@@ -1,50 +1,22 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Button,
-  Checkbox,
-} from "@heroui/react";
-import { User, Lock, RefreshCw, LogIn, Trash2 } from "lucide-react";
+import { Card, CardBody, CardHeader, Input, Button } from "@heroui/react";
+import { RefreshCw, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 
-import {
-  InitResponse,
-  LoginResponse,
-  AttendanceData,
-} from "@/types/attendance";
+import { InitResponse, LoginResponse, AttendanceData } from "@/types/attendance";
 import { AppNavbar } from "@/components/app-navbar";
 import { Footer } from "@/components/footer";
 import axiosClient from "@/api/axiosClient";
 
 interface LoginPageProps {
-  onLogin: (data: AttendanceData, username: string) => void;
+  onLogin: (data: AttendanceData) => void;
 }
 
 export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [loading, setLoading] = useState(false);
-
   const [initData, setInitData] = useState<InitResponse | null>(null);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
-  const [savedStudentName, setSavedStudentName] = useState("");
-
-  const clearCredentials = () => {
-    localStorage.removeItem("nsut_username");
-    localStorage.removeItem("nsut_password");
-    localStorage.removeItem("nsut_student_name");
-    setUsername("");
-    setPassword("");
-    setRememberMe(false);
-    setHasSavedCredentials(false);
-    setSavedStudentName("");
-  };
 
   const initSession = async () => {
     setLoading(true);
@@ -61,71 +33,32 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     }
   };
 
-  // Load saved credentials from localStorage on mount
   useEffect(() => {
-    const savedUsername = localStorage.getItem("nsut_username");
-    const savedPassword = localStorage.getItem("nsut_password");
-    const storedStudentName = localStorage.getItem("nsut_student_name");
-
-    if (savedUsername && savedPassword) {
-      setUsername(savedUsername);
-      setPassword(savedPassword);
-      setRememberMe(true);
-      setHasSavedCredentials(true);
-      if (storedStudentName) {
-        setSavedStudentName(storedStudentName);
-      }
-    }
     initSession();
   }, []);
 
   const handleLogin = async () => {
-    if (!initData) return;
+    if (!initData || !captcha) return;
     setLoading(true);
     setError("");
 
-    // Save or clear credentials based on rememberMe
-    if (rememberMe) {
-      localStorage.setItem("nsut_username", username);
-      localStorage.setItem("nsut_password", password);
-    } else {
-      localStorage.removeItem("nsut_username");
-      localStorage.removeItem("nsut_password");
-    }
-
     try {
-      const res = await axiosClient.post<LoginResponse>("/login", {
+      // Single-user: credentials live on the server, only captcha is needed
+      const res = await axiosClient.post<LoginResponse>("/refresh", {
         sessionId: initData.sessionId,
-        username,
-        password,
         captcha,
       });
 
       if (res.data.success && res.data.attendance) {
-        // Save student name to localStorage if remember me is enabled
-        if (rememberMe && res.data.attendance.studentInfo?.name) {
-          localStorage.setItem(
-            "nsut_student_name",
-            res.data.attendance.studentInfo.name,
-          );
-        }
-        onLogin(res.data.attendance, username);
+        onLogin(res.data.attendance);
       } else if (res.data.error) {
         setError(res.data.error);
-        if (res.data.error.toLowerCase().includes("captcha")) {
-          initSession(); // Only refresh if captcha error or similar
-          setCaptcha("");
-        } else {
-          // Maybe don't refresh session on simple password error, usually keep session?
-          // But existing logic refreshed. Let's refresh to be safe against session timeout.
-          initSession();
-          setCaptcha("");
-        }
+        initSession();
+        setCaptcha("");
       }
     } catch (err: any) {
       const errorMsg =
-        err.response?.data?.error ||
-        "Login failed. Check credentials or refresh captcha.";
+        err.response?.data?.error || "Failed. Check captcha and try again.";
 
       setError(errorMsg);
       initSession();
@@ -155,17 +88,11 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
           <Card className="w-full shadow-2xl border border-default-100 bg-white/70 dark:bg-default-50/70 backdrop-blur-xl">
             <CardHeader className="flex flex-col items-center pt-8 pb-2 gap-2">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mb-2">
-                <span className="text-white font-bold text-3xl">N</span>
+                <span className="text-white font-bold text-3xl">p</span>
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {hasSavedCredentials
-                  ? `Welcome, ${savedStudentName ? savedStudentName.split(" ")[0] : username}`
-                  : "Welcome Back"}
-              </h1>
+              <h1 className="text-2xl font-bold text-foreground">present</h1>
               <p className="text-default-500 text-sm">
-                {hasSavedCredentials
-                  ? "Enter the captcha to continue"
-                  : "Enter your IMS credentials to continue"}
+                Enter the captcha to view your attendance
               </p>
             </CardHeader>
 
@@ -180,143 +107,80 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
                 </motion.div>
               )}
 
-              <div className="space-y-4">
-                {!hasSavedCredentials && (
-                  <>
-                    <Input
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                      }}
-                      isDisabled={loading}
-                      label="Roll Number"
-                      labelPlacement="outside"
-                      placeholder="202XUCSXXXX"
-                      startContent={
-                        <User
-                          className="text-default-400 pointer-events-none"
-                          size={18}
-                        />
-                      }
-                      value={username}
-                      variant="bordered"
-                      onChange={(e) => setUsername(e.target.value)}
-                    />
-
-                    <Input
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                      }}
-                      isDisabled={loading}
-                      label="Password"
-                      labelPlacement="outside"
-                      placeholder="••••••••"
-                      startContent={
-                        <Lock
-                          className="text-default-400 pointer-events-none"
-                          size={18}
-                        />
-                      }
-                      type="password"
-                      value={password}
-                      variant="bordered"
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </>
-                )}
-
-                {hasSavedCredentials && (
-                  <div className="flex items-center justify-between p-3 bg-default-100/50 rounded-lg border border-default-200">
-                    <div className="flex items-center gap-2">
-                      <User className="text-default-500" size={18} />
-                      <span className="text-sm font-medium text-default-700">
-                        {username}
-                      </span>
-                    </div>
-                    <Button
-                      color="danger"
-                      size="sm"
-                      startContent={<Trash2 size={14} />}
-                      variant="flat"
-                      onPress={clearCredentials}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                )}
-
-                {initData?.captchaSrc && (
-                  <div className="space-y-2">
-                    <p className="text-small font-medium text-default-700">
-                      Captcha
-                    </p>
-                    <div className="flex gap-3">
-                      <div className="relative group shrink-0">
-                        <img
-                          alt="Captcha"
-                          className="h-12 w-auto border border-default-300 rounded-lg bg-white object-contain px-2 transition-all group-hover:border-primary"
-                          src={initData.captchaSrc}
-                        />
-                        <Button
-                          isIconOnly
-                          className="absolute -top-2 -right-2 bg-default-100 shadow-sm border border-default-200"
-                          isDisabled={loading}
-                          radius="full"
-                          size="sm"
-                          onPress={initSession}
-                        >
-                          <RefreshCw
-                            className={loading ? "animate-spin" : ""}
-                            size={14}
-                          />
-                        </Button>
-                      </div>
-                      <Input
-                        classNames={{
-                          inputWrapper:
-                            "h-12 bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                        }}
-                        isDisabled={loading}
-                        placeholder="Enter code"
-                        value={captcha}
-                        variant="bordered"
-                        onChange={(e) => setCaptcha(e.target.value)}
+              {initData?.captchaSrc ? (
+                <div className="space-y-2">
+                  <p className="text-small font-medium text-default-700">
+                    Captcha
+                  </p>
+                  <div className="flex gap-3">
+                    <div className="relative group shrink-0">
+                      <img
+                        alt="Captcha"
+                        className="h-12 w-auto border border-default-300 rounded-lg bg-white object-contain px-2 transition-all group-hover:border-primary"
+                        src={initData.captchaSrc}
                       />
+                      <Button
+                        isIconOnly
+                        className="absolute -top-2 -right-2 bg-default-100 shadow-sm border border-default-200"
+                        isDisabled={loading}
+                        radius="full"
+                        size="sm"
+                        onPress={initSession}
+                      >
+                        <RefreshCw
+                          className={loading ? "animate-spin" : ""}
+                          size={14}
+                        />
+                      </Button>
                     </div>
+                    <Input
+                      classNames={{
+                        inputWrapper:
+                          "h-12 bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
+                      }}
+                      isDisabled={loading}
+                      placeholder="Enter code"
+                      value={captcha}
+                      variant="bordered"
+                      onChange={(e) => setCaptcha(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && captcha) {
+                          handleLogin();
+                        }
+                      }}
+                    />
                   </div>
-                )}
-              </div>
-
-              {!hasSavedCredentials && (
-                <Checkbox
-                  classNames={{
-                    label: "text-sm text-default-500",
-                  }}
-                  isSelected={rememberMe}
-                  size="sm"
-                  onValueChange={setRememberMe}
-                >
-                  Remember my credentials
-                </Checkbox>
+                </div>
+              ) : (
+                !error && (
+                  <div className="flex items-center justify-center py-4">
+                    <RefreshCw
+                      className="animate-spin text-primary"
+                      size={24}
+                    />
+                    <span className="ml-2 text-default-500">
+                      Loading captcha...
+                    </span>
+                  </div>
+                )
               )}
 
               <Button
                 className="mt-2 w-full font-semibold shadow-lg shadow-indigo-500/20"
                 color="primary"
-                isDisabled={loading || !username || !password || !captcha}
+                isDisabled={loading || !captcha}
                 isLoading={loading}
                 size="lg"
                 startContent={!loading && <LogIn size={18} />}
                 onPress={handleLogin}
               >
-                {loading ? "Authenticating..." : "Access Dashboard"}
+                {loading ? "Fetching..." : "View Attendance"}
               </Button>
             </CardBody>
           </Card>
 
           <p className="text-center text-xs text-default-400 mt-6">
-            Secure connection via NSUT IMS Portal
+            Your attendance, one tap away
           </p>
         </motion.div>
       </div>

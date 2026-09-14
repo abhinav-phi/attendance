@@ -6,7 +6,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { v4 as uuidv4 } from "uuid";
 import qs from "qs";
-import { parseAttendance } from "./parseAttendance.js";
+import { parseAttendance } from "../src/parseAttendance.js";
 import dotenv from "dotenv";
 dotenv.config();
 import fs from "fs";
@@ -25,6 +25,37 @@ const sessionStore = new Map();
 
 const BASE_URL = "https://www.imsnsit.org/imsnsit";
 
+// Single-user (private app) credentials — set via env vars, never commit
+const FIXED_UID = process.env.IMS_UID || "";
+const FIXED_PWD = process.env.IMS_PWD || "";
+
+// Resolve a session from the in-memory store (local dev) or from a
+// self-contained stateless token (needed on serverless, where each
+// request can hit a fresh instance with empty memory).
+function getSession(sessionId) {
+  if (sessionId && sessionStore.has(sessionId)) {
+    return sessionStore.get(sessionId);
+  }
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(String(sessionId || ""), "base64url").toString("utf8"),
+    );
+
+    if (!parsed || !parsed.jar || !parsed.hrandNum) return null;
+    const jar = CookieJar.deserializeSync(parsed.jar);
+
+    return {
+      jar,
+      hrandNum: parsed.hrandNum,
+      phpSessionId: parsed.phpSessionId,
+      createdAt: Date.now(),
+      stateless: true,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Minimal headers
 const getHeaders = (referer) => ({
   "User-Agent":
@@ -38,7 +69,7 @@ const getHeaders = (referer) => ({
 });
 
 app.get("/", (req, res) => {
-  res.send("NSUT Attendance Backend is running.");
+  res.send("present backend is running.");
 });
 
 // --- ROUTE 1: INIT ---
@@ -150,7 +181,15 @@ app.get("/api/init", async (req, res) => {
     const phpSessionId = cookies.find((c) => c.key === "PHPSESSID")?.value;
     // console.log('PHPSESSID:', phpSessionId);
 
-    const sessionId = uuidv4();
+    const sessionId = Buffer.from(
+      JSON.stringify({
+        jar: await jar.serializeSync(),
+        hrandNum,
+        phpSessionId,
+      }),
+    ).toString("base64url");
+
+    // Also keep in memory for local dev (fast path)
     sessionStore.set(sessionId, {
       jar,
       hrandNum,
@@ -170,20 +209,8 @@ app.get("/api/init", async (req, res) => {
   }
 });
 
-// --- ROUTE 2: LOGIN ---
-app.post("/api/login", async (req, res) => {
-  const { sessionId, username, password, captcha } = req.body;
-
-  // console.log('\n=== Login attempt ===');
-  // console.log('User:', username, 'Captcha:', captcha);
-
-  if (!sessionStore.has(sessionId)) {
-    return res
-      .status(400)
-      .json({ error: "Session expired. Please refresh the page." });
-  }
-
-  const session = sessionStore.get(sessionId);
+// Shared IMS login + attendance fetch (used by /api/login and /api/refresh)
+async function loginWithCaptcha(session, username, password, captcha) {
   const { jar, hrandNum } = session;
 
   const client = wrapper(
@@ -195,94 +222,160 @@ app.post("/api/login", async (req, res) => {
     }),
   );
 
-  try {
-    const formData = qs.stringify({
-      f: "",
-      uid: username,
-      pwd: password,
-      HRAND_NUM: hrandNum,
-      fy: "2026-27",
-      comp: "NETAJI SUBHAS UNIVERSITY OF TECHNOLOGY",
-      cap: captcha,
-      logintype: "student",
-    });
+  const formData = qs.stringify({
+    f: "",
+    uid: username,
+    pwd: password,
+    HRAND_NUM: hrandNum,
+    fy: "2026-27",
+    comp: "NETAJI SUBHAS UNIVERSITY OF TECHNOLOGY",
+    cap: captcha,
+    logintype: "student",
+  });
 
-    // console.log('Sending login with HRAND:', hrandNum);
-
-    const loginRes = await client.post(
-      `${BASE_URL}/student_login.php`,
-      formData,
-      {
-        headers: {
-          ...getHeaders(`${BASE_URL}/student_login.php`),
-          "Content-Type": "application/x-www-form-urlencoded",
-          Origin: "https://www.imsnsit.org",
-        },
+  const loginRes = await client.post(
+    `${BASE_URL}/student_login.php`,
+    formData,
+    {
+      headers: {
+        ...getHeaders(`${BASE_URL}/student_login.php`),
+        "Content-Type": "application/x-www-form-urlencoded",
+        Origin: "https://www.imsnsit.org",
       },
+    },
+  );
+
+  const loginHtml = loginRes.data;
+  const lowerHtml = String(loginHtml).toLowerCase();
+
+  if (
+    lowerHtml.includes("invalid") ||
+    lowerHtml.includes("incorrect") ||
+    lowerHtml.includes("wrong captcha")
+  ) {
+    const err = new Error(
+      "Invalid credentials or captcha. Please try again.",
     );
 
-    let loginHtml = loginRes.data;
-    // console.log('Login response length:', loginHtml.length);
-    // console.log('Login response URL:', loginRes.request?.res?.responseUrl || 'unknown');
+    err.status = 401;
+    throw err;
+  }
 
-    // Check for error messages
-    const lowerHtml = loginHtml.toLowerCase();
-    if (
-      lowerHtml.includes("invalid") ||
-      lowerHtml.includes("incorrect") ||
-      lowerHtml.includes("wrong captcha")
-    ) {
-      // console.log('❌ Login failed - error detected in response');
-      return res
-        .status(401)
-        .json({ error: "Invalid credentials or captcha. Please try again." });
+  // Check if login was successful (frameset or welcome page)
+  if (
+    loginHtml.includes("frameset") ||
+    loginHtml.includes("plum_url") ||
+    loginHtml.includes("Welcome") ||
+    loginHtml.includes("Logout") ||
+    loginHtml.length > 2000
+  ) {
+    session.loggedIn = true;
+    session.username = username;
+    session.loginHtml = loginHtml;
+
+    try {
+      return await fetchAttendance(client, username, loginHtml);
+    } catch (attErr) {
+      const err = new Error(
+        "Logged in but could not fetch attendance: " + attErr.message,
+      );
+
+      err.status = 502;
+      throw err;
     }
+  }
 
-    // The login might redirect to a frameset - check for plum_url in response
-    const framesetMatch = loginHtml.match(/plum_url\.php\?([^'"&\s]+)/);
-    if (framesetMatch) {
-      // console.log('Found frameset redirect to plum_url');
-    }
+  const err = new Error(
+    "Login failed. Please check credentials and captcha.",
+  );
 
-    // Check if login was successful (frameset or welcome page)
-    if (
-      loginHtml.includes("frameset") ||
-      loginHtml.includes("plum_url") ||
-      loginHtml.includes("Welcome") ||
-      loginHtml.includes("Logout") ||
-      loginHtml.length > 2000
-    ) {
-      session.loggedIn = true;
-      session.username = username;
-      session.loginHtml = loginHtml;
-      // console.log('✅ Login successful!');
-      // console.log('Login HTML preview:', loginHtml.substring(0, 1000));
+  err.status = 401;
+  throw err;
+}
 
-      // Try to fetch attendance
-      try {
-        const attendance = await fetchAttendance(client, username, loginHtml);
-        return res.json({
-          success: true,
-          attendance,
-        });
-      } catch (attErr) {
-        // console.log('Attendance fetch failed:', attErr.message);
-        return res.json({
-          success: true,
-          message: "Logged in but could not fetch attendance",
-          error: attErr.message,
-        });
-      }
-    }
+// --- ROUTE 2: LOGIN (locked to the configured single user) ---
+app.post("/api/login", async (req, res) => {
+  const { sessionId, username, password, captcha } = req.body;
 
-    // console.log('Login unclear, first 500 chars:', loginHtml.substring(0, 500));
+  const session = getSession(sessionId);
+
+  if (!session) {
     return res
-      .status(401)
-      .json({ error: "Login failed. Please check credentials and captcha." });
+      .status(400)
+      .json({ error: "Session expired. Please refresh the page." });
+  }
+
+  // Private app: only the configured roll number is allowed
+  if (
+    FIXED_UID &&
+    String(username || "").toUpperCase() !== FIXED_UID.toUpperCase()
+  ) {
+    return res.status(403).json({ error: "This is a private app." });
+  }
+
+  try {
+    const attendance = await loginWithCaptcha(
+      session,
+      username,
+      password,
+      captcha,
+    );
+
+    return res.json({
+      success: true,
+      attendance,
+    });
   } catch (e) {
+    if (e.status === 401 || e.status === 502) {
+      return res.status(e.status).json({ error: e.message });
+    }
     console.error("Login error:", e.message);
     res.status(500).json({ error: "Login failed: " + e.message });
   }
+});
+
+// --- ROUTE 2b: REFRESH (single-user, captcha only; credentials from env) ---
+app.post("/api/refresh", async (req, res) => {
+  const { sessionId, captcha } = req.body;
+
+  if (!FIXED_UID || !FIXED_PWD) {
+    return res
+      .status(500)
+      .json({ error: "Server credentials not configured." });
+  }
+
+  const session = getSession(sessionId);
+
+  if (!session) {
+    return res
+      .status(400)
+      .json({ error: "Session expired. Please refresh the page." });
+  }
+
+  try {
+    const attendance = await loginWithCaptcha(
+      session,
+      FIXED_UID,
+      FIXED_PWD,
+      captcha,
+    );
+
+    return res.json({
+      success: true,
+      attendance,
+    });
+  } catch (e) {
+    if (e.status === 401 || e.status === 502) {
+      return res.status(e.status).json({ error: e.message });
+    }
+    console.error("Refresh error:", e.message);
+    res.status(500).json({ error: "Refresh failed: " + e.message });
+  }
+});
+
+// --- ROUTE 2c: ME (tells the frontend that single-user mode is on) ---
+app.get("/api/me", (req, res) => {
+  res.json({ singleUser: Boolean(FIXED_UID && FIXED_PWD) });
 });
 
 // Fetch attendance after login
@@ -478,11 +571,11 @@ async function fetchAttendance(client, username, loginResponseHtml) {
 app.post("/api/attendance", async (req, res) => {
   const { sessionId } = req.body;
 
-  if (!sessionStore.has(sessionId)) {
+  const session = getSession(sessionId);
+
+  if (!session) {
     return res.status(400).json({ error: "Session expired" });
   }
-
-  const session = sessionStore.get(sessionId);
   if (!session.loggedIn) {
     return res.status(401).json({ error: "Not logged in" });
   }
@@ -520,6 +613,11 @@ setInterval(
   5 * 60 * 1000,
 );
 
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`),
-);
+// Local dev server only — on Vercel (serverless) the app is exported instead
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on http://localhost:${PORT}`),
+  );
+}
+
+export default app;
