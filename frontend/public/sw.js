@@ -1,7 +1,9 @@
 /* present — service worker: app shell offline so the home-screen
-   shortcut opens instantly even on slow network. API is never cached. */
-const CACHE = "present-v1";
-const CORE = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon.svg"];
+   shortcut opens instantly even on slow network. API is never cached.
+   Navigations are network-first so new designs show up immediately;
+   hashed static assets are cache-first. */
+const CACHE = "present-v2";
+const CORE = ["/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -23,6 +25,10 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function isNavigation(request) {
+  return request.mode === "navigate";
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
@@ -33,6 +39,24 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return; // never cache backend data
 
+  // Navigations: network first, fall back to cache when offline
+  if (isNavigation(request)) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          const copy = res.clone();
+
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+
+          return res;
+        })
+        .catch(() => caches.match(request).then((hit) => hit || caches.match("/"))),
+    );
+
+    return;
+  }
+
+  // Static assets: cache first
   event.respondWith(
     caches.match(request).then(
       (hit) =>
