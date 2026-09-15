@@ -1,18 +1,16 @@
 import { useState } from "react";
-import { Card, CardBody, Chip, Button } from "@heroui/react";
-import { motion } from "framer-motion";
-import { CalendarDays, BarChart3, Clock, RefreshCw } from "lucide-react";
+import { Card, CardBody, Button } from "@heroui/react";
+import { RefreshCw } from "lucide-react";
 
 import { useAppContext } from "@/context/app-context";
 import { AppNavbar } from "@/components/app-navbar";
 import { SubjectCard } from "@/components/subject-card";
-import { getPercentageColor } from "@/utils/attendance-utils";
 import { timeAgo } from "@/utils/cache";
 import { Footer } from "@/components/footer";
 import { RefreshModal } from "@/components/refresh-modal";
 
 export const HomePage = () => {
-  const { attendance, username, setAttendance, lastUpdated } = useAppContext();
+  const { attendance, setAttendance, lastUpdated } = useAppContext();
   const [isRefreshModalOpen, setIsRefreshModalOpen] = useState(false);
 
   if (!attendance) return null;
@@ -20,163 +18,83 @@ export const HomePage = () => {
   const subjects = attendance.subjects || [];
   const summary = attendance.summary || {};
   const stats = attendance.overallStats;
+  const pct = parseFloat(stats.percentage);
+  const atRisk = !isNaN(pct) && pct < 75;
 
   // Greeting based on time
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-black">
+    <div className="min-h-screen flex flex-col bg-[#f5f5f7] dark:bg-black">
       <AppNavbar username={attendance.studentInfo?.name.split(" ")[0]} />
 
-      {/* Decorative background */}
-      <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-indigo-50/50 to-transparent dark:from-indigo-950/10 pointer-events-none" />
-
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 relative z-10 pb-10">
+      <main className="flex-grow w-full max-w-[980px] mx-auto px-5 sm:px-6 pt-10 pb-6">
         <div className="flex flex-col gap-8">
-          {/* Header Section */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-end"
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                {greeting},{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-                  {attendance.studentInfo?.name.split(" ")[0]}
-                </span>
-              </h1>
-              <p className="text-default-500 mt-2 text-lg">
-                Overall Attendance Status
-              </p>
-            </div>
+          {/* Hero */}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[34px] sm:text-[40px] leading-[1.1] font-semibold tracking-[-0.02em] text-[#1d1d1f] dark:text-white">
+              {greeting},{" "}
+              {attendance.studentInfo?.name.split(" ")[0] || "there"}.
+            </h1>
+            <p className="text-[17px] text-[#333333] dark:text-[#cccccc]">
+              Here&apos;s your attendance at a glance.
+            </p>
+          </div>
 
-            <div className="flex gap-4 items-center">
-              <div className="flex flex-col items-end gap-1">
+          {/* Overall */}
+          <Card className="rounded-[18px] border border-[#e0e0e0] dark:border-[#2a2a2c] bg-white dark:bg-[#272729] shadow-none">
+            <CardBody className="p-6 flex flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-[14px] text-[#7a7a7a] dark:text-[#86868b]">
+                  Overall attendance
+                </p>
+                <p className="mt-1 text-[56px] leading-[1.07] font-semibold tracking-[-0.02em] text-[#1d1d1f] dark:text-white">
+                  {stats.percentage}
+                </p>
+                <p className="mt-1 text-[14px] text-[#333333] dark:text-[#cccccc]">
+                  {stats.totalPresent} of {stats.totalClasses} classes
+                  {atRisk ? (
+                    <span className="text-[#c8102e] dark:text-[#ff6961]">
+                      {" "}
+                      · below 75%
+                    </span>
+                  ) : (
+                    <span className="text-[#1a7f37] dark:text-[#7ee787]">
+                      {" "}
+                      · on track
+                    </span>
+                  )}
+                </p>
                 {lastUpdated && (
-                  <p className="text-xs text-default-400 font-medium">
+                  <p className="mt-2 text-[12px] text-[#7a7a7a] dark:text-[#86868b]">
                     Updated {timeAgo(lastUpdated)}
                   </p>
                 )}
-                <Button
-                  className="bg-white/60 dark:bg-default-100/50 backdrop-blur-md shadow-sm font-medium"
-                  variant="flat"
-                  startContent={<RefreshCw className="text-default-600" size={18} />}
-                  onPress={() => setIsRefreshModalOpen(true)}
-                >
-                  Refresh
-                </Button>
               </div>
-              <Card className="border-none shadow-sm bg-white/60 dark:bg-default-100/50 backdrop-blur-md">
-                <CardBody className="py-2 px-4 flex-row items-center gap-3">
-                  <div
-                    className={`p-2 rounded-full ${getPercentageColor(parseFloat(stats.percentage)) === "success" ? "bg-success-100 text-success-600 dark:text-success-400 dark:bg-success-900/20" : "bg-warning-100 text-warning-600 dark:text-warning-400 dark:bg-warning-900/20"}`}
-                  >
-                    <BarChart3 size={20} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-default-400 font-semibold uppercase">
-                      Total
-                    </p>
-                    <p
-                      className={`text-xl font-bold ${getPercentageColor(parseFloat(stats.percentage)) === "success" ? "text-success-600 dark:text-success-400" : getPercentageColor(parseFloat(stats.percentage)) === "warning" ? "text-warning-600 dark:text-warning-400" : "text-danger-600 dark:text-danger-400"}`}
-                    >
-                      {stats.percentage}
-                    </p>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
-          </motion.div>
+              <Button
+                className="apple-press shrink-0 h-11 px-[22px] rounded-full bg-[#0066cc] text-white text-[17px] font-normal"
+                startContent={<RefreshCw size={16} />}
+                onPress={() => setIsRefreshModalOpen(true)}
+              >
+                Refresh
+              </Button>
+            </CardBody>
+          </Card>
 
-          {/* Overview Stats Grid */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="bg-white dark:bg-default-50 shadow-sm">
-              <CardBody className="flex flex-row items-center justify-between p-4">
-                <div>
-                  <p className="text-default-500 text-xs font-semibold uppercase">
-                    Student Info
-                  </p>
-                  <p className="text-sm font-bold mt-1 max-w-[120px] truncate">
-                    {attendance.studentInfo?.rollNo || username}
-                  </p>
-                  <p className="text-xs text-default-400">
-                    Sem {attendance.studentInfo?.semester}
-                  </p>
-                </div>
-                <div className="p-2 bg-default-100 rounded-lg text-default-500">
-                  <UserIcon />
-                </div>
-              </CardBody>
-            </Card>
-            <Card className="bg-white dark:bg-default-50 shadow-sm">
-              <CardBody className="flex flex-row items-center justify-between p-4">
-                <div>
-                  <p className="text-default-500 text-xs font-semibold uppercase">
-                    Total Classes
-                  </p>
-                  <p className="text-xl font-bold mt-1 text-foreground">
-                    {stats.totalClasses}
-                  </p>
-                </div>
-                <div className="p-2 bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg">
-                  <CalendarDays size={20} />
-                </div>
-              </CardBody>
-            </Card>
-            <Card className="bg-white dark:bg-default-50 shadow-sm">
-              <CardBody className="flex flex-row items-center justify-between p-4">
-                <div>
-                  <p className="text-default-500 text-xs font-semibold uppercase">
-                    Present
-                  </p>
-                  <p className="text-xl font-bold mt-1 text-success-600 dark:text-success-400">
-                    {stats.totalPresent}
-                  </p>
-                </div>
-                <div className="p-2 bg-success-50 dark:bg-success-900/20 text-success-500 dark:text-success-400 rounded-lg">
-                  <Clock size={20} />
-                </div>
-              </CardBody>
-            </Card>
-            <Card className="bg-white dark:bg-default-50 shadow-sm">
-              <CardBody className="flex flex-row items-center justify-between p-4">
-                <div>
-                  <p className="text-default-500 text-xs font-semibold uppercase">
-                    Absent
-                  </p>
-                  <p className="text-xl font-bold mt-1 text-danger-600 dark:text-danger-400">
-                    {stats.totalAbsent}
-                  </p>
-                </div>
-                <div className="p-2 bg-danger-50 dark:bg-danger-900/20 text-danger-500 dark:text-danger-400 rounded-lg">
-                  <Clock size={20} />
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          {/* Subjects Grid */}
+          {/* Subjects */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-default-700 dark:text-primary-800 flex items-center gap-2">
-                <span className="w-1 h-6 bg-primary rounded-full" />
-                My Subjects
+            <div className="flex items-baseline justify-between mb-3 px-1">
+              <h2 className="text-[21px] font-semibold tracking-[0.01em] text-[#1d1d1f] dark:text-white">
+                Subjects
               </h2>
-              <Chip color="primary" size="sm" variant="flat">
-                {subjects.length} Subjects
-              </Chip>
+              <p className="text-[14px] text-[#7a7a7a] dark:text-[#86868b]">
+                {subjects.length} total
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {subjects.map((subject, idx) => (
                 <SubjectCard
                   key={subject.code}
@@ -189,9 +107,8 @@ export const HomePage = () => {
           </div>
         </div>
       </main>
-      <div className="relative z-10">
-        <Footer />
-      </div>
+
+      <Footer />
 
       <RefreshModal
         isOpen={isRefreshModalOpen}
@@ -201,20 +118,3 @@ export const HomePage = () => {
     </div>
   );
 };
-
-const UserIcon = () => (
-  <svg
-    fill="none"
-    height="20"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-    width="20"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);

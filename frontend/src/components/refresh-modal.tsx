@@ -93,82 +93,96 @@ export const RefreshModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} placement="center" onClose={handleClose}>
+    <Modal
+      isOpen={isOpen}
+      placement="center"
+      onClose={handleClose}
+      classNames={{
+        base: "rounded-[18px] bg-white dark:bg-[#272729] shadow-none border border-[#e0e0e0] dark:border-[#2a2a2c]",
+      }}
+    >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h3 className="text-lg font-bold">Refresh Attendance</h3>
-          <p className="text-sm text-default-500 font-normal">
-            Enter the captcha to fetch latest attendance data
+        <ModalHeader className="flex flex-col gap-1 px-6 pt-6">
+          <h3 className="text-[21px] font-semibold tracking-[0.01em] text-[#1d1d1f] dark:text-white">
+            Refresh attendance
+          </h3>
+          <p className="text-[14px] font-normal text-[#7a7a7a] dark:text-[#86868b]">
+            Enter the captcha to fetch the latest data
           </p>
         </ModalHeader>
-        <ModalBody>
+        <ModalBody className="px-6">
           {error && (
-            <div className="bg-danger-50 border border-danger-200 text-danger-600 p-3 rounded-lg text-sm font-medium text-center">
+            <p className="text-[14px] text-[#c8102e] dark:text-[#ff6961] text-center">
               {error}
-            </div>
+            </p>
           )}
 
           {initData?.captchaSrc && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="relative group shrink-0">
-                  <img
-                    alt="Captcha"
-                    className="h-12 w-auto border border-default-300 rounded-lg bg-white object-contain px-2"
-                    src={initData.captchaSrc}
-                  />
-                  <Button
-                    isIconOnly
-                    className="absolute -top-2 -right-2 bg-default-100 shadow-sm border border-default-200"
-                    isDisabled={loading}
-                    radius="full"
-                    size="sm"
-                    onPress={initSession}
-                  >
-                    <RefreshCw
-                      className={loading ? "animate-spin" : ""}
-                      size={14}
-                    />
-                  </Button>
-                </div>
-                <Input
-                  classNames={{
-                    inputWrapper:
-                      "h-12 bg-default-100/50 hover:bg-default-100 focus-within:bg-default-100 border-default-200",
-                  }}
-                  isDisabled={loading}
-                  placeholder="Enter captcha code"
-                  value={captcha}
-                  variant="bordered"
-                  onChange={(e) => setCaptcha(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && captcha) {
-                      handleRefresh();
-                    }
-                  }}
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <img
+                  alt="Captcha"
+                  className="h-11 w-auto border border-[#e0e0e0] dark:border-[#2a2a2c] rounded-[8px] bg-white object-contain px-2"
+                  src={initData.captchaSrc}
                 />
+                <button
+                  aria-label="Reload captcha"
+                  className="apple-press absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#e8e8ed] dark:bg-black flex items-center justify-center"
+                  disabled={loading}
+                  onClick={initSession}
+                >
+                  <RefreshCw
+                    className={`text-[#1d1d1f] dark:text-white ${loading ? "animate-spin" : ""}`}
+                    size={12}
+                  />
+                </button>
               </div>
+              <Input
+                aria-label="Captcha code"
+                classNames={{
+                  inputWrapper:
+                    "h-11 rounded-full bg-white dark:bg-black border border-[#e0e0e0] dark:border-[#2a2a2c] shadow-none",
+                  input:
+                    "text-[17px] text-[#1d1d1f] dark:text-white placeholder:text-[#7a7a7a]",
+                }}
+                isDisabled={loading}
+                placeholder="Captcha code"
+                value={captcha}
+                variant="bordered"
+                onChange={(e) => setCaptcha(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && captcha) {
+                    handleRefresh();
+                  }
+                }}
+              />
             </div>
           )}
 
           {!initData?.captchaSrc && !error && (
-            <div className="flex items-center justify-center py-4">
-              <RefreshCw className="animate-spin text-primary" size={24} />
-              <span className="ml-2 text-default-500">Loading captcha...</span>
+            <div className="flex items-center justify-center py-4 gap-2">
+              <RefreshCw className="animate-spin text-[#0066cc]" size={18} />
+              <span className="text-[14px] text-[#7a7a7a]">
+                Loading captcha…
+              </span>
             </div>
           )}
         </ModalBody>
-        <ModalFooter>
-          <Button variant="flat" onPress={handleClose}>
+        <ModalFooter className="px-6 pb-6">
+          <Button
+            className="apple-press rounded-full text-[#0066cc] dark:text-[#2997ff] text-[17px]"
+            variant="light"
+            onPress={handleClose}
+          >
             Cancel
           </Button>
           <Button
-            color="primary"
+            className="apple-press rounded-full bg-[#0066cc] text-white text-[17px] font-normal"
             isDisabled={loading || !captcha}
             isLoading={loading}
             onPress={handleRefresh}
           >
-            {loading ? "Refreshing..." : "Refresh Data"}
+            {loading ? "Refreshing…" : "Refresh"}
           </Button>
         </ModalFooter>
       </ModalContent>

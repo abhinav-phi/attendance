@@ -1,30 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Progress,
-  Button,
-  Chip,
-} from "@heroui/react";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  HelpCircle,
-  RefreshCw,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { Card, CardBody, CardHeader, Progress, Button } from "@heroui/react";
+import { HelpCircle, RefreshCw } from "lucide-react";
 
 import { AppNavbar } from "@/components/app-navbar";
 import { Footer } from "@/components/footer";
 import { useAppContext } from "@/context/app-context";
-import {
-  getPercentageColor,
-  calculateClassesNeeded,
-} from "@/utils/attendance-utils";
+import { calculateClassesNeeded } from "@/utils/attendance-utils";
 import { RefreshModal } from "@/components/refresh-modal";
 
 export const SubjectDetailPage = () => {
@@ -35,16 +17,20 @@ export const SubjectDetailPage = () => {
 
   if (!attendance || !subjectCode) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="p-8 shadow-xl">
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] dark:bg-black px-6">
+        <Card className="p-8 rounded-[18px] border border-[#e0e0e0] dark:border-[#2a2a2c] bg-white dark:bg-[#272729] shadow-none">
           <CardBody className="items-center text-center">
-            <AlertCircle className="text-warning-500 mb-4" size={48} />
-            <p className="text-lg font-semibold mb-2">No data available</p>
-            <p className="text-default-500 mb-4">
-              Please login again to view attendance.
+            <p className="text-[21px] font-semibold text-[#1d1d1f] dark:text-white mb-2">
+              No data available
             </p>
-            <Button color="primary" onPress={() => window.location.reload()}>
-              Reload Page
+            <p className="text-[15px] text-[#333333] dark:text-[#cccccc] mb-4">
+              Please open the app again to view attendance.
+            </p>
+            <Button
+              className="apple-press rounded-full bg-[#0066cc] text-white"
+              onPress={() => window.location.reload()}
+            >
+              Reload
             </Button>
           </CardBody>
         </Card>
@@ -56,11 +42,18 @@ export const SubjectDetailPage = () => {
 
   if (!subject) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="p-8 shadow-xl">
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] dark:bg-black px-6">
+        <Card className="p-8 rounded-[18px] border border-[#e0e0e0] dark:border-[#2a2a2c] bg-white dark:bg-[#272729] shadow-none">
           <CardBody className="items-center text-center">
-            <p className="text-lg font-semibold mb-4">Subject not found</p>
-            <Button onPress={() => navigate("/")}>Go Back</Button>
+            <p className="text-[17px] font-semibold text-[#1d1d1f] dark:text-white mb-4">
+              Subject not found
+            </p>
+            <Button
+              className="apple-press rounded-full bg-[#0066cc] text-white"
+              onPress={() => navigate("/")}
+            >
+              Go Back
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -176,250 +169,173 @@ export const SubjectDetailPage = () => {
   const renderAttendanceValue = (val: string) => {
     if (val === "1")
       return (
-        <Chip
-          classNames={{ base: "bg-success-50 border-success-200" }}
-          color="success"
-          size="sm"
-          startContent={<CheckCircle2 size={14} />}
-          variant="faded"
-        >
+        <span className="text-[14px] font-semibold text-[#1a7f37] dark:text-[#7ee787]">
           Present
-        </Chip>
+        </span>
       );
     if (val === "0")
       return (
-        <Chip
-          classNames={{ base: "bg-danger-50 border-danger-200" }}
-          color="danger"
-          size="sm"
-          startContent={<XCircle size={14} />}
-          variant="faded"
-        >
+        <span className="text-[14px] font-semibold text-[#c8102e] dark:text-[#ff6961]">
           Absent
-        </Chip>
+        </span>
       );
     if (val.includes("+")) {
       if (val == "1+1") {
         return (
-          <Chip
-            classNames={{ base: "bg-success-50 border-success-200" }}
-            color="success"
-            size="sm"
-            startContent={<CheckCircle2 size={14} />}
-            variant="faded"
-          >
+          <span className="text-[14px] font-semibold text-[#1a7f37] dark:text-[#7ee787]">
             Present {val}
-          </Chip>
+          </span>
         );
       } else if (val == "0+0") {
         return (
-          <Chip
-            classNames={{ base: "bg-danger-50 border-danger-200" }}
-            color="danger"
-            size="sm"
-            startContent={<XCircle size={14} />}
-            variant="faded"
-          >
+          <span className="text-[14px] font-semibold text-[#c8102e] dark:text-[#ff6961]">
             Absent {val}
-          </Chip>
+          </span>
         );
       }
 
       return (
-        <Chip
-          color="warning"
-          size="sm"
-          startContent={<CheckCircle2 size={14} />}
-          variant="flat"
-        >
+        <span className="text-[14px] font-semibold text-[#9a6700] dark:text-[#d29922]">
           Extra {val}
-        </Chip>
+        </span>
       );
     }
 
     return (
-      <Chip size="sm" variant="flat">
+      <span className="text-[14px] text-[#333333] dark:text-[#cccccc]">
         {val}
-      </Chip>
+      </span>
     );
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-black">
+    <div className="min-h-screen flex flex-col bg-[#f5f5f7] dark:bg-black">
       <AppNavbar />
 
-      <div className="flex-grow w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex-grow w-full max-w-[980px] mx-auto px-5 sm:px-6 pt-6 pb-6 space-y-6">
         {/* Header Navigation */}
-        <motion.div
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center justify-between"
-          initial={{ opacity: 0, x: -10 }}
-        >
-          <div className="flex items-center gap-2">
-            <Button
-              isIconOnly
-              className="bg-white/50 dark:bg-default-100 hover:bg-white dark:hover:bg-default-200"
-              variant="light"
-              onPress={() => navigate("/")}
-            >
-              <ArrowLeft className="text-default-600" size={20} />
-            </Button>
-            <div>
-              <p className="text-sm font-medium text-default-500">
-                Back to Dashboard
-              </p>
-            </div>
-          </div>
-          <Button
-            isIconOnly
-            className="bg-white/50 dark:bg-default-100 hover:bg-white dark:hover:bg-default-200"
-            variant="light"
-            onPress={() => setIsRefreshModalOpen(true)}
+        <div className="flex items-center justify-between">
+          <button
+            className="apple-press text-[17px] text-[#0066cc] dark:text-[#2997ff]"
+            onClick={() => navigate("/")}
           >
-            <RefreshCw className="text-default-600" size={18} />
-          </Button>
-        </motion.div>
+            ‹ Back
+          </button>
+          <button
+            aria-label="Refresh attendance"
+            className="apple-press w-11 h-11 rounded-full bg-[#e8e8ed]/70 dark:bg-[#2a2a2c] flex items-center justify-center"
+            onClick={() => setIsRefreshModalOpen(true)}
+          >
+            <RefreshCw className="text-[#1d1d1f] dark:text-white" size={18} />
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Stats */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-2 space-y-6"
-            initial={{ opacity: 0, y: 20 }}
-          >
-            <Card className="shadow-md border-t-4 border-t-primary">
-              <CardHeader className="px-6 py-5 flex flex-col items-start gap-1 bg-white dark:bg-default-50">
-                <div className="flex justify-between w-full items-start">
-                  <div>
-                    <h1 className="text-2xl font-bold leading-tight w-full max-w-xl">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="rounded-[18px] border border-[#e0e0e0] dark:border-[#2a2a2c] bg-white dark:bg-[#272729] shadow-none">
+              <CardHeader className="px-6 pt-6 pb-4 flex flex-col items-start gap-1">
+                <div className="flex justify-between w-full items-start gap-4">
+                  <div className="min-w-0">
+                    <h1 className="text-[28px] leading-[1.14] font-semibold tracking-[-0.01em] text-[#1d1d1f] dark:text-white">
                       {subject.name}
                     </h1>
-                    <p className="font-mono text-sm text-primary-800 font-medium mt-1 bg-primary-50 dark:bg-primary-300/30 w-fit px-2 py-0.5 rounded">
+                    <p className="text-[14px] text-[#7a7a7a] dark:text-[#86868b] mt-1">
                       {subject.code}
                     </p>
                   </div>
 
-                  <div className="flex flex-col items-end">
-                    <span
-                      className={`text-3xl font-bold ${getPercentageColor(pct) === "success" ? "text-success-600 dark:text-success-400" : getPercentageColor(pct) === "warning" ? "text-warning-600 dark:text-warning-400" : "text-danger-600 dark:text-danger-400"}`}
-                    >
+                  <div className="flex flex-col items-end shrink-0">
+                    <span className="text-[40px] leading-none font-semibold tracking-[-0.02em] text-[#1d1d1f] dark:text-white">
                       {pctStr}
                     </span>
-                    <span className="text-xs text-default-400">
-                      Total Attendance
+                    <span className="text-[12px] text-[#7a7a7a] dark:text-[#86868b] mt-1">
+                      Total
                     </span>
                   </div>
                 </div>
               </CardHeader>
-              <CardBody className="px-6 py-6 border-t border-default-100 bg-white/50 dark:bg-default-50/50">
+              <CardBody className="px-6 pb-6 pt-2">
                 <div className="mb-6">
-                  <div className="flex justify-between text-sm mb-2 font-medium text-default-600">
-                    <span>Attendance Progress</span>
+                  <div className="flex justify-between text-[14px] mb-2 text-[#333333] dark:text-[#cccccc]">
+                    <span>Attendance progress</span>
                     <span>
-                      {present} / {total} Classes
+                      {present} / {total} classes
                     </span>
                   </div>
                   <Progress
                     classNames={{
-                      indicator: "bg-gradient-to-r from-blue-500 to-indigo-600",
+                      base: "h-[6px]",
+                      track: "bg-[#e8e8ed] dark:bg-[#2a2a2c]",
+                      indicator: "bg-[#0066cc]",
                     }}
-                    color={getPercentageColor(pct)}
                     showValueLabel={false}
-                    size="lg"
                     value={pct}
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="flex flex-col items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+                  <div className="flex flex-col items-center py-3 border-r border-[#e0e0e0] dark:border-[#2a2a2c]">
+                    <span className="text-[28px] leading-none font-semibold text-[#1d1d1f] dark:text-white">
                       {total}
                     </span>
-                    <span className="text-xs uppercase font-semibold text-blue-400 dark:text-blue-300">
+                    <span className="text-[12px] text-[#7a7a7a] dark:text-[#86868b] mt-1">
                       Total
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                    <span className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+                  <div className="flex flex-col items-center py-3 border-r border-[#e0e0e0] dark:border-[#2a2a2c]">
+                    <span className="text-[28px] leading-none font-semibold text-[#1d1d1f] dark:text-white">
                       {present}
                     </span>
-                    <span className="text-xs uppercase font-semibold text-green-400 dark:text-green-300">
+                    <span className="text-[12px] text-[#7a7a7a] dark:text-[#86868b] mt-1">
                       Present
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
-                    <span className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">
+                  <div className="flex flex-col items-center py-3">
+                    <span className="text-[28px] leading-none font-semibold text-[#1d1d1f] dark:text-white">
                       {absent}
                     </span>
-                    <span className="text-xs uppercase font-semibold text-red-400 dark:text-red-300">
+                    <span className="text-[12px] text-[#7a7a7a] dark:text-[#86868b] mt-1">
                       Absent
                     </span>
                   </div>
                 </div>
 
                 {total > 0 && (
-                  <div
-                    className={`p-4 rounded-xl border flex items-start gap-3 ${
+                  <p
+                    className={`text-[15px] leading-[1.47] ${
                       calc.type === "skip"
-                        ? "bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800"
-                        : "bg-danger-50 border-danger-200 dark:bg-danger/5 dark:border-danger-800"
+                        ? "text-[#1a7f37] dark:text-[#7ee787]"
+                        : "text-[#c8102e] dark:text-[#ff6961]"
                     }`}
                   >
-                    <div
-                      className={`mt-0.5 p-1 rounded-full ${calc.type === "skip" ? " text-success-700 dark:text-success-300" : " text-danger-700 dark:text-danger-600"}`}
-                    >
-                      {calc.type === "skip" ? (
-                        <CheckCircle2 size={16} />
-                      ) : (
-                        <AlertCircle size={16} />
-                      )}
-                    </div>
-                    <div>
-                      <h4
-                        className={`font-bold text-sm ${calc.type === "skip" ? "text-success-800 dark:text-success-300" : "text-danger-800 dark:text-danger-500"}`}
-                      >
-                        {calc.type === "skip"
-                          ? "Safe Zone"
-                          : "Improvement Needed"}
-                      </h4>
-                      <p
-                        className={`text-sm mt-0.5 ${calc.type === "skip" ? "text-success-700 dark:text-success-400" : "text-danger-700 dark:text-danger-800"}`}
-                      >
-                        {calc.type === "skip"
-                          ? calc.count > 0
-                            ? `You can safely skip the next ${calc.count} class${calc.count !== 1 ? "es" : ""} and stay above 75%.`
-                            : `You are exactly on the edge. Attend the next class!`
-                          : `You need to attend ${calc.count} more class${calc.count !== 1 ? "es" : ""} consecutively to reach 75%.`}
-                      </p>
-                    </div>
-                  </div>
+                    {calc.type === "skip"
+                      ? calc.count > 0
+                        ? `You can skip the next ${calc.count} class${calc.count !== 1 ? "es" : ""} and stay above 75%.`
+                        : `You are exactly on the edge. Attend the next class.`
+                      : `Attend ${calc.count} more class${calc.count !== 1 ? "es" : ""} in a row to reach 75%.`}
+                  </p>
                 )}
               </CardBody>
             </Card>
-          </motion.div>
+          </div>
 
           {/* Right Column: History */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="shadow-md h-full max-h-[600px] flex flex-col">
-              <CardHeader className="bg-default-50 border-b border-default-100 py-4 px-5">
-                <h3 className="font-bold text-medium flex items-center gap-2">
-                  <CalendarDaysIcon />
-                  Daily History
+          <div>
+            <Card className="rounded-[18px] border border-[#e0e0e0] dark:border-[#2a2a2c] bg-white dark:bg-[#272729] shadow-none h-full max-h-[600px] flex flex-col overflow-hidden">
+              <CardHeader className="border-b border-[#e0e0e0] dark:border-[#2a2a2c] py-4 px-5">
+                <h3 className="font-semibold text-[17px] text-[#1d1d1f] dark:text-white">
+                  Daily history
                 </h3>
               </CardHeader>
-              <CardBody className="p-0 overflow-y-auto custom-scrollbar">
+              <CardBody className="p-0 overflow-y-auto thin-scroll">
                 {dailyRecords.length > 0 ? (
-                  <div className="divide-y divide-default-100">
+                  <div className="divide-y divide-[#f0f0f0] dark:divide-[#2a2a2c]">
                     {monthOrder.map((month) => (
                       <div key={month}>
                         {/* Month Header */}
-                        <div className="sticky z-30 top-0 bg-default-50 dark:bg-default-50 px-4 py-2 border-b border-default-100">
-                          <span className="text-sm font-bold text-primary dark:text-primary-500">
+                        <div className="sticky z-30 top-0 bg-white dark:bg-[#272729] px-5 py-2 border-b border-[#f0f0f0] dark:border-[#2a2a2c]">
+                          <span className="text-[14px] font-semibold text-[#1d1d1f] dark:text-white">
                             {monthFullNames[month] || month}{" "}
                             {getYearForMonth(month)}
                           </span>
@@ -428,13 +344,13 @@ export const SubjectDetailPage = () => {
                         {groupedByMonth[month].map((record, idx) => (
                           <div
                             key={`${month}-${idx}`}
-                            className="flex items-center justify-between p-4 hover:bg-default-50 transition-colors"
+                            className="flex items-center justify-between px-5 py-3"
                           >
                             <div className="flex flex-col">
-                              <span className="text-sm font-semibold">
+                              <span className="text-[15px] font-semibold text-[#1d1d1f] dark:text-white">
                                 {record.date}
                               </span>
-                              <span className="text-xs text-default-400">
+                              <span className="text-[12px] text-[#7a7a7a] dark:text-[#86868b]">
                                 {getDayOfWeek(record.date, record.month)}
                               </span>
                             </div>
@@ -445,14 +361,14 @@ export const SubjectDetailPage = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-2">
-                    <HelpCircle size={32} />
-                    <p className="text-sm">No records found</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-[#7a7a7a] gap-2">
+                    <HelpCircle size={28} />
+                    <p className="text-[14px]">No records found</p>
                   </div>
                 )}
               </CardBody>
             </Card>
-          </motion.div>
+          </div>
         </div>
       </div>
       <Footer />
@@ -465,28 +381,3 @@ export const SubjectDetailPage = () => {
     </div>
   );
 };
-
-const CalendarDaysIcon = () => (
-  <svg
-    fill="none"
-    height="18"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-    width="18"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect height="18" rx="2" ry="2" width="18" x="3" y="4" />
-    <line x1="16" x2="16" y1="2" y2="6" />
-    <line x1="8" x2="8" y1="2" y2="6" />
-    <line x1="3" x2="21" y1="10" y2="10" />
-    <path d="M8 14h.01" />
-    <path d="M12 14h.01" />
-    <path d="M16 14h.01" />
-    <path d="M8 18h.01" />
-    <path d="M12 18h.01" />
-    <path d="M16 18h.01" />
-  </svg>
-);

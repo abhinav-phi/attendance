@@ -1,9 +1,9 @@
 export const Footer = () => {
   return (
-    <footer className="w-full py-6 mt-auto">
-      <div className="flex flex-col items-center justify-center gap-2 text-sm text-default-400">
-        <span>present</span>
-      </div>
+    <footer className="w-full py-8 mt-auto">
+      <p className="text-center text-[12px] text-[#7a7a7a] dark:text-[#86868b]">
+        present
+      </p>
     </footer>
   );
 };
